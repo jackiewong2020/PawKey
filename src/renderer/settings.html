@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PawKey 设置</title>
+  <link rel="stylesheet" href="css/settings.css">
+</head>
+<body>
+  <header class="titlebar">
+    <div class="traffic-lights">
+      <button class="tl-dot tl-close" id="closeBtn" type="button" aria-label="关闭"></button>
+      <button class="tl-dot tl-min" id="minBtn" type="button" aria-label="最小化"></button>
+      <span class="tl-dot tl-disabled" aria-hidden="true"></span>
+    </div>
+    <div class="titlebar-center">
+      <span class="brand-name">PawKey</span>
+    </div>
+    <button class="status-pill" id="permPill" type="button" title="全局打字权限状态">
+      <span class="dot"></span>
+      <span id="permText">检测权限</span>
+    </button>
+  </header>
+
+  <nav class="seg-nav-wrap" role="tablist" aria-label="设置分类">
+    <div class="seg-nav">
+      <button class="tab-btn active" type="button" data-tab="skins" role="tab" aria-selected="true" title="角色外观 (⌘1)">角色外观</button>
+      <button class="tab-btn" type="button" data-tab="interact" role="tab" aria-selected="false" title="机械声学 (⌘2)">机械声学</button>
+      <button class="tab-btn" type="button" data-tab="reminders" role="tab" aria-selected="false" title="专注健康 (⌘3)">
+        <span>专注健康</span>
+        <span class="tab-dot" aria-hidden="true"></span>
+      </button>
+      <button class="tab-btn" type="button" data-tab="window" role="tab" aria-selected="false" title="通用系统 (⌘4)">通用系统</button>
+    </div>
+  </nav>
+
+  <main class="scroll">
+    <!-- ==================== TAB 1: 角色外观 ==================== -->
+    <div class="tab-pane active" data-pane="skins">
+      <section class="perm-banner" id="permBanner" hidden>
+        <div class="perm-head">
+          <div class="perm-title">开启全局打字同步</div>
+          <span class="perm-tag">本地离线 · 仅读键位</span>
+        </div>
+        <p class="perm-desc">前往「系统设置 → 隐私与安全性 → 输入监控」打开 <b>PawKey</b> 开关（若列表中已有 PawKey，请先<b>关闭再重新打开</b>或点 <b>-</b> 移除后重新添加），再点「立即重启」即可生效。</p>
+        <div class="perm-actions">
+          <button class="btn primary" id="bannerOpenPermBtn" type="button">打开输入监控</button>
+          <button class="btn" id="bannerRelaunchBtn" type="button">已开启，立即重启</button>
+        </div>
+      </section>
+
+      <section class="companion-card">
+        <div class="companion-top">
+          <button class="companion-avatar" id="heroStickerBtn" type="button" title="点按逗猫">
+            <img id="heroAvatarImg" src="../assets/cats/cow.png" alt="PawKey" width="54" height="54">
+          </button>
+          <div class="companion-info">
+            <div class="companion-name-row">
+              <span class="companion-name" id="heroCatName">奶牛</span>
+              <span class="companion-tag" id="heroCatTag">呆毛</span>
+            </div>
+            <div class="companion-metrics">
+              <span class="metric">手速 <b id="statKpm">0 KPM</b></span>
+              <span class="metric" id="statKeysWrap">今日敲击 <b id="statKeys">0</b></span>
+              <span class="metric">饮水 <b id="statWater">0 杯</b></span>
+            </div>
+          </div>
+        </div>
+        <div class="quick-actions" aria-label="快捷互动">
+          <button class="act-btn" id="playMeowBtn" type="button">喵一声</button>
+          <button class="act-btn" id="playTypeBtn" type="button">试打字</button>
+          <button class="act-btn" id="playHuntBtn" type="button">捕猎眼</button>
+          <button class="act-btn" id="playCoffeeBtn" type="button">喝咖啡</button>
+          <button class="act-btn" id="playDozeBtn" type="button">打盹</button>
+          <button class="act-btn" id="playNapBtn" type="button">猫饼睡</button>
+          <button class="act-btn" id="playTiredBtn" type="button">流汗</button>
+          <button class="act-btn" id="playMeltBtn" type="button">崩溃</button>
+        </div>
+      </section>
+
+      <div class="group-label">
+        <span>猫咪角色</span>
+        <span class="group-hint">9 款原创角色</span>
+      </div>
+      <section class="card pad-grid">
+        <div class="skin-grid" id="catGrid"></div>
+        <div class="divider"></div>
+        <div class="row">
+          <div class="row-copy"><div class="row-title">瞳色</div></div>
+          <div class="eye-swatches" id="eyeSwatches">
+            <button class="eye-swatch" type="button" data-eye="auto" title="跟随角色">原</button>
+            <button class="eye-swatch" type="button" data-eye="#F6BE4F" style="--c:#F6BE4F" title="琥珀金"></button>
+            <button class="eye-swatch" type="button" data-eye="#72B356" style="--c:#72B356" title="抹茶绿"></button>
+            <button class="eye-swatch" type="button" data-eye="#5EA8E6" style="--c:#5EA8E6" title="海盐蓝"></button>
+            <button class="eye-swatch" type="button" data-eye="#FF82A9" style="--c:#FF82A9" title="樱花粉"></button>
+            <button class="eye-swatch" type="button" data-eye="#9E8CFC" style="--c:#9E8CFC" title="薰衣紫"></button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-copy"><div class="row-title">颈部小铃铛项圈</div></div>
+          <label class="switch"><input type="checkbox" id="collarToggle" checked><span class="track"></span></label>
+        </div>
+      </section>
+
+      <div class="group-label">
+        <span>机械键盘配色</span>
+        <span class="group-hint">6 套 65% PBT 桌面套件</span>
+      </div>
+      <section class="card pad-grid">
+        <div class="skin-grid" id="keyboardGrid"></div>
+      </section>
+    </div>
+
+    <!-- ==================== TAB 2: 机械声学 ==================== -->
+    <div class="tab-pane" data-pane="interact">
+      <div class="group-label">
+        <span>机械轴体声学</span>
+        <span class="group-hint">8 套 104 键实体真录</span>
+      </div>
+      <section class="card pad-studio">
+        <div class="row first-row">
+          <div class="row-copy">
+            <div class="row-title">开启键盘声与呼噜声</div>
+            <div class="row-note">零延迟内存采样，搭配微随机音高避免机械重复感。</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="sound"><span class="track"></span></label>
+        </div>
+
+        <div class="pack-grid" id="switchSoundGrid">
+          <button class="pack-btn" type="button" data-switch="s1"><span class="pack-name">Frost Click</span><span class="pack-feel">清脆青轴</span></button>
+          <button class="pack-btn" type="button" data-switch="s2"><span class="pack-name">Ruby Thock</span><span class="pack-feel">麻将石子</span></button>
+          <button class="pack-btn" type="button" data-switch="s3"><span class="pack-name">Chestnut Bump</span><span class="pack-feel">柔段茶轴</span></button>
+          <button class="pack-btn" type="button" data-switch="s4"><span class="pack-name">Midnight Thock</span><span class="pack-feel">静电容闷响</span></button>
+          <button class="pack-btn" type="button" data-switch="s5"><span class="pack-name">Alpine Pop</span><span class="pack-feel">晶紫脆响</span></button>
+          <button class="pack-btn" type="button" data-switch="s6"><span class="pack-name">Onyx Glide</span><span class="pack-feel">沉稳黑轴</span></button>
+          <button class="pack-btn" type="button" data-switch="s7"><span class="pack-name">Glacier Glide</span><span class="pack-feel">轻盈红轴</span></button>
+          <button class="pack-btn" type="button" data-switch="s8"><span class="pack-name">Cream Clack</span><span class="pack-feel">奶油脆底</span></button>
+        </div>
+        <p class="pack-desc" id="packDescCard">顺滑线性，圆润饱满的麻将 Thock，久打不累耳。</p>
+
+        <div class="kst-deck">
+          <div class="kst-head">
+            <span>试音键盘 · 点按或直接敲击键盘</span>
+            <span class="kst-badge" id="kstActiveTag">Ruby Thock</span>
+          </div>
+          <div class="kst-board" id="kstBoard"></div>
+        </div>
+
+        <div class="row row-range">
+          <div class="row-top"><span class="row-title">音量</span><span class="val" id="volumeValue">45%</span></div>
+          <input type="range" id="volume" min="0" max="1" step="0.05">
+        </div>
+        <div class="row">
+          <div class="row-copy">
+            <div class="row-title">松键回弹声 (Key-Up)</div>
+            <div class="row-note">松开按键时播放实体轴芯回弹声。</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="keyUpSound"><span class="track"></span></label>
+        </div>
+      </section>
+
+      <div class="group-label"><span>互动与趣味彩蛋</span></div>
+      <section class="card pad-list">
+        <div class="row"><div class="row-copy"><div class="row-title">显示桌面键盘</div><div class="row-note">关闭后仅保留小猫，敲击时仍会挥爪。</div></div><label class="switch"><input type="checkbox" id="keyboardVisible"><span class="track"></span></label></div>
+        <div class="row"><div class="row-copy"><div class="row-title">左手鼠标布局</div><div class="row-note">左右镜像互换键盘与鼠标位置。</div></div><label class="switch"><input type="checkbox" id="leftMouse"><span class="track"></span></label></div>
+        <div class="row"><div class="row-copy"><div class="row-title">体力流汗与崩溃彩蛋</div><div class="row-note">持续高速敲击会流汗甚至罢工崩溃，摸头立刻哄好。</div></div><label class="switch"><input type="checkbox" id="staminaFun"><span class="track"></span></label></div>
+        <div class="row"><div class="row-copy"><div class="row-title">摸鱼喝咖啡与打盹彩蛋</div><div class="row-note">空闲片刻会抱起热拿铁小口抿，或冒着鼻涕泡点头打盹。</div></div><label class="switch"><input type="checkbox" id="idleFun"><span class="track"></span></label></div>
+        <div class="row"><div class="row-copy"><div class="row-title">隐私模式</div><div class="row-note">不显示键帽字符气泡，仅保留爪动与按键微光。</div></div><label class="switch"><input type="checkbox" id="privacy"><span class="track"></span></label></div>
+        <div class="row">
+          <div class="row-copy"><div class="row-title">无操作自动进入猫饼深睡</div></div>
+          <select id="sleepMinutes"><option value="1">1 分钟</option><option value="3">3 分钟</option><option value="5">5 分钟</option><option value="10">10 分钟</option><option value="15">15 分钟</option></select>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== TAB 3: 专注健康 ==================== -->
+    <div class="tab-pane" data-pane="reminders">
+      <div class="group-label">
+        <span>番茄专注</span>
+        <span class="group-hint" id="focusDoneHint">今日已完成 0 个番茄</span>
+      </div>
+      <section class="card pad-list">
+        <div class="focus-bar">
+          <button class="focus-btn" type="button" data-focus-min="25">25 分钟</button>
+          <button class="focus-btn" type="button" data-focus-min="45">45 分钟</button>
+          <button class="focus-btn" type="button" data-focus-min="60">60 分钟</button>
+          <button class="focus-btn subtle" id="focusStopBtn" type="button">结束</button>
+        </div>
+        <div class="row">
+          <div class="row-copy">
+            <div class="row-title">会议勿扰模式</div>
+            <div class="row-note">投屏或开会时静音并暂停全部桌面提醒。</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="dndMode"><span class="track"></span></label>
+        </div>
+      </section>
+
+      <div class="group-label"><span>工作时段与周期提醒</span></div>
+      <section class="card pad-list">
+        <div class="row">
+          <div class="row-copy"><div class="row-title">提醒生效时段</div><div class="row-note">非工作时间不弹出久坐与喝水提醒。</div></div>
+          <div class="time-range">
+            <input type="time" id="remWorkStart" value="08:00">
+            <span class="time-sep">至</span>
+            <input type="time" id="remWorkEnd" value="18:00">
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-copy"><div class="row-title">仅工作日生效（周一至周五）</div></div>
+          <label class="switch"><input type="checkbox" id="remWeekdaysOnly"><span class="track"></span></label>
+        </div>
+        <div class="row">
+          <div class="row-copy">
+            <div class="row-title">久坐起身活动</div>
+            <div class="inline-row">
+              每 <select id="remStandInterval"><option value="30">30 分钟</option><option value="45">45 分钟</option><option value="60">60 分钟</option><option value="90">90 分钟</option><option value="120">120 分钟</option></select>
+              休息 <select id="remStandRest"><option value="5">5 分钟</option><option value="10">10 分钟</option><option value="15">15 分钟</option></select>
+            </div>
+          </div>
+          <div class="row-right">
+            <button class="mini-btn" id="testStandBtn" type="button">预览</button>
+            <label class="switch"><input type="checkbox" id="remStandEnabled"><span class="track"></span></label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-copy">
+            <div class="row-title">
+              <span>定时喝水</span>
+              <button class="water-pill" id="waterBadge" type="button" title="点击手动打卡 +1">今日 0 杯 +</button>
+            </div>
+            <div class="inline-row">
+              每 <select id="remWaterInterval"><option value="30">30 分钟</option><option value="45">45 分钟</option><option value="60">60 分钟</option><option value="90">90 分钟</option></select> 提醒一次
+            </div>
+          </div>
+          <div class="row-right">
+            <button class="mini-btn" id="testWaterBtn" type="button">预览</button>
+            <label class="switch"><input type="checkbox" id="remWaterEnabled"><span class="track"></span></label>
+          </div>
+        </div>
+      </section>
+
+      <div class="group-label">
+        <span>每日定时事项</span>
+        <button class="link-btn" id="testDailyBtn" type="button">预览提醒</button>
+      </div>
+      <section class="card pad-list">
+        <div class="daily-list" id="dailyList"></div>
+        <div class="quick-rem">
+          <button class="q-pill" type="button" data-qrem="💊|09:00|早上按时吃药">+ 09:00 早药</button>
+          <button class="q-pill" type="button" data-qrem="👁️|15:00|滴眼药水护眼">+ 15:00 护眼</button>
+          <button class="q-pill" type="button" data-qrem="💊|20:00|晚上按时吃药">+ 20:00 晚药</button>
+        </div>
+        <div class="daily-add">
+          <select id="newDailyIcon"><option value="💊">💊</option><option value="💧">💧</option><option value="👁️">👁️</option><option value="🏃">🏃</option><option value="⭐">⭐</option></select>
+          <input type="time" id="newDailyTime" value="20:00">
+          <input type="text" id="newDailyTitle" placeholder="添加每日定时提醒" maxlength="24">
+          <button class="btn primary sm" id="addDailyBtn" type="button">添加</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== TAB 4: 通用系统 ==================== -->
+    <div class="tab-pane" data-pane="window">
+      <div class="group-label"><span>窗口与外观</span></div>
+      <section class="card pad-list">
+        <div class="row row-range">
+          <div class="row-top">
+            <span class="row-title">缩放比例</span>
+            <div class="preset-group">
+              <button class="preset-btn" type="button" data-scale-preset="0.45">迷你</button>
+              <button class="preset-btn" type="button" data-scale-preset="0.7">小</button>
+              <button class="preset-btn" type="button" data-scale-preset="1">中</button>
+              <button class="preset-btn" type="button" data-scale-preset="1.35">大</button>
+              <span class="val" id="scaleValue">85%</span>
+            </div>
+          </div>
+          <input type="range" id="scale" min="0.4" max="2.0" step="0.05">
+        </div>
+        <div class="row row-range">
+          <div class="row-top"><span class="row-title">透明度</span><span class="val" id="opacityValue">100%</span></div>
+          <input type="range" id="opacity" min="0.55" max="1" step="0.05">
+        </div>
+        <div class="row">
+          <div class="row-copy"><div class="row-title">窗口背景</div><div class="row-note">支持透明悬浮、浅灰卡片，或 OBS 绿幕抠像。</div></div>
+          <div class="seg-mini">
+            <button class="seg-btn" type="button" data-bg-mode="transparent">透明</button>
+            <button class="seg-btn" type="button" data-bg-mode="card">卡片</button>
+            <button class="seg-btn" type="button" data-bg-mode="greenscreen">绿幕</button>
+          </div>
+        </div>
+        <div class="row"><div class="row-copy"><div class="row-title">鼠标穿透（游戏防误触）</div><div class="row-note">按住 Option (⌥) 可临时拖动位置或右键打开设置。</div></div><label class="switch"><input type="checkbox" id="clickThrough"><span class="track"></span></label></div>
+        <div class="row"><div class="row-copy"><div class="row-title">全屏应用自动隐藏</div></div><label class="switch"><input type="checkbox" id="hideInFullscreen"><span class="track"></span></label></div>
+        <div class="row"><div class="row-copy"><div class="row-title">低功耗省电模式</div><div class="row-note">降低帧率与渲染倍率，延长 MacBook 续航。</div></div><label class="switch"><input type="checkbox" id="lowPower"><span class="track"></span></label></div>
+        <div class="row"><div class="row-copy"><div class="row-title">始终置顶显示</div></div><label class="switch"><input type="checkbox" id="alwaysOnTop"><span class="track"></span></label></div>
+      </section>
+
+      <div class="group-label"><span>系统与隐私</span></div>
+      <section class="card pad-list">
+        <div class="row"><div class="row-copy"><div class="row-title">登录 macOS 时自动启动</div></div><label class="switch"><input type="checkbox" id="launchAtStartup"><span class="track"></span></label></div>
+        <div class="row">
+          <div class="row-copy"><div class="row-title">窗口位置与运行状态</div></div>
+          <div class="row-right">
+            <button class="btn sm" id="resetPosBtn" type="button">重置位置</button>
+            <button class="btn sm" id="relaunchBtn" type="button">重启应用</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-copy"><div class="row-title">恢复默认设置</div><div class="row-note">保留累计敲击与喝水统计。</div></div>
+          <button class="btn sm" id="resetBtn" type="button">恢复默认</button>
+        </div>
+      </section>
+
+      <div class="group-label"><span>快捷键与关于</span></div>
+      <section class="card pad-list">
+        <div class="shortcut-grid">
+          <div class="sc-item"><kbd>⌘ 1–4</kbd><span>切换标签页</span></div>
+          <div class="sc-item"><kbd>滚轮</kbd><span>悬停缩放小猫</span></div>
+          <div class="sc-item"><kbd>拖头/身</kbd><span>移动并固定位置</span></div>
+          <div class="sc-item"><kbd>按住 ⌥</kbd><span>穿透模式下拖动</span></div>
+          <div class="sc-item"><kbd>双击猫头</kbd><span>撒娇喵一声</span></div>
+          <div class="sc-item"><kbd>Esc</kbd><span>关闭当前窗口</span></div>
+        </div>
+        <div class="about-note">
+          <b>PawKey 1.0</b> · 100% 本地离线运行，不记录文字内容、不联网上传。<br>
+          Copyright © 2026 PawKey Authors · 开源组件致谢：Three.js (MIT)、MechVibes 机械轴采样 (MIT)。
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <button class="btn sm" id="hideBtn" type="button">隐藏小猫</button>
+    <div class="footer-right">
+      <button class="btn sm" id="quitBtn" type="button">退出</button>
+      <button class="btn primary sm" id="doneBtn" type="button">完成</button>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="js/skins.js"></script>
+  <script src="js/pawkey-audio.js"></script>
+  <script src="js/pawkey-settings.js"></script>
+</body>
+</html>

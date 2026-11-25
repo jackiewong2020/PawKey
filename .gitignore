@@ -1,0 +1,13 @@
+# macOS & build artifacts
+.DS_Store
+.build/
+dist/
+*.dmg
+*.zip
+*.log
+
+# Python & editors
+__pycache__/
+*.pyc
+.vscode/
+.idea/

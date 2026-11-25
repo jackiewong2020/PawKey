@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PawKey</title>
+  <link rel="stylesheet" href="css/pet.css">
+</head>
+<body>
+  <div id="stage">
+    <svg id="tail2d" viewBox="0 0 420 374" preserveAspectRatio="none" aria-hidden="true">
+      <g id="tail2dGroup">
+        <path id="tail2dPath" fill="#101010"></path>
+      </g>
+    </svg>
+  </div>
+  <div id="hint" role="status">拖住猫头或身体移动位置 · 点按猫头摸摸</div>
+  <div id="fallback" hidden></div>
+
+  <script src="../vendor/three.min.js"></script>
+  <script src="../vendor/ParametricGeometry.js"></script>
+  <script src="js/skins.js"></script>
+  <script src="js/pawkey-audio.js"></script>
+  <script src="js/cat3d.js"></script>
+  <script src="js/tail2d.js"></script>
+  <script src="js/pawkey-app.js"></script>
+</body>
+</html>
