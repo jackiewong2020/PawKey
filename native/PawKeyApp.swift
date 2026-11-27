@@ -384,6 +384,7 @@ class PawKeyAppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     var localMouseMonitor: Any?
     var lastSettingsLeftMouseDown: NSEvent?
     var petHidden = false
+    var lastLeftDown = false
     var lastReportedHookOk: Bool?
     var lastReportedAllowed: Bool?
     var permissionRetryInterval: TimeInterval = 0
@@ -1416,6 +1417,11 @@ class PawKeyAppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     func tickCursor() {
         guard !petHidden, !isDraggingPet else { return }
         updateMouseInteractivity()
+        let leftDown = (NSEvent.pressedMouseButtons & 1) != 0
+        if lastLeftDown && !leftDown {
+            send(petWebView, ["type": "mouse-button", "button": 0, "down": false])
+        }
+        lastLeftDown = leftDown
         let m = NSEvent.mouseLocation
         let dx = m.x - lastScreenMouse.x, dy = lastScreenMouse.y - m.y
         let moved = abs(dx) > 0.5 || abs(dy) > 0.5
@@ -1431,11 +1437,11 @@ class PawKeyAppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             let lx = m.x - f.minX, ly = f.height - (m.y - f.minY)
             if !wasInsidePet || abs(lx - lastLocalMouse.x) > 0.5 || abs(ly - lastLocalMouse.y) > 0.5 {
                 wasInsidePet = true; lastLocalMouse = NSPoint(x: lx, y: ly)
-                send(petWebView, ["type": "cursor", "x": lx, "y": ly, "inside": true])
+                send(petWebView, ["type": "cursor", "x": lx, "y": ly, "inside": true, "leftDown": leftDown])
             }
         } else if wasInsidePet {
             wasInsidePet = false; webWantsInteractive = false; lastLocalMouse = NSPoint(x: -9999, y: -9999)
-            send(petWebView, ["type": "cursor", "inside": false]); updateMouseInteractivity()
+            send(petWebView, ["type": "cursor", "inside": false, "leftDown": leftDown]); updateMouseInteractivity()
         }
     }
 

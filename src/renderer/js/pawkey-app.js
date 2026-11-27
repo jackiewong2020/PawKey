@@ -650,13 +650,31 @@ window.addEventListener('unhandledrejection', function (ev) {
       if (hit === 'body' || hit === 'keyboard') beginPetDrag();
     }, true);
 
+    function stopPetting(keepSmile) {
+      if (headDown) {
+        try { stage.releasePointerCapture(headDown.id); } catch (_) {}
+        headDown = null;
+      }
+      if (petting) {
+        petting = false;
+        audio.purrStop();
+      } else {
+        audio.purrStop();
+      }
+      stopHearts();
+      if (pet) {
+        if (keepSmile && pet.endPet) pet.endPet();
+        else if (!keepSmile) pet.cancelPet();
+      }
+    }
+
     window.addEventListener('pointermove', function (ev) {
-      if (ev.isTrusted && petting && ev.buttons === 0) {
-        petting = false; audio.purrStop(); stopHearts();
+      if (ev.isTrusted && petting && (ev.buttons & 1) === 0) {
+        stopPetting(true);
       }
       if (!headDown || headDown.dragging) return;
       if (ev.isTrusted === false && ev.buttons === 0) return;
-      if ((ev.buttons & 1) === 0) { headDown = null; return; }
+      if ((ev.buttons & 1) === 0) { stopPetting(true); return; }
       if (Math.hypot(ev.clientX - headDown.x, ev.clientY - headDown.y) >= 5) {
         headDown.dragging = true;
         if (petting) { petting = false; audio.purrStop(); }
@@ -668,29 +686,25 @@ window.addEventListener('unhandledrejection', function (ev) {
     }, true);
 
     window.addEventListener('pointerup', function () {
-      if (headDown) { try { stage.releasePointerCapture(headDown.id); } catch (_) {} headDown = null; }
-      if (petting) { petting = false; audio.purrStop(); }
-      stopHearts();
+      stopPetting(true);
       if (isDraggingPet) api.dragEnd();
       else { window.__catDragFreeze = false; document.body.style.cursor = 'default'; }
     }, true);
 
     window.addEventListener('pointercancel', function () {
-      if (headDown) { try { stage.releasePointerCapture(headDown.id); } catch (_) {} headDown = null; }
-      if (petting) { petting = false; audio.purrStop(); }
-      stopHearts();
+      stopPetting(false);
       if (isDraggingPet) api.dragEnd();
       finishPetDragUI();
     }, true);
 
     window.addEventListener('contextmenu', function (ev) { ev.preventDefault(); api.openSettings(); });
-    window.addEventListener('blur', function () { if (petting) { petting = false; audio.purrStop(); stopHearts(); } });
-    window.addEventListener('pagehide', function () { flushStats(0); audio.purrStop(); stopHearts(); });
+    window.addEventListener('blur', function () { if (petting || headDown) stopPetting(true); });
+    window.addEventListener('pagehide', function () { flushStats(0); stopPetting(false); });
     window.addEventListener('beforeunload', function () { flushStats(0); });
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) {
         flushStats(0);
-        if (petting) { petting = false; audio.purrStop(); stopHearts(); }
+        if (petting || headDown) stopPetting(false);
       }
     });
 
@@ -709,11 +723,18 @@ window.addEventListener('unhandledrejection', function (ev) {
     api.onKey(onKey);
     api.onMouseButton(function (p) {
       if (!p) return;
-      if (p.down) mouseButtons.add(p.button); else mouseButtons.delete(p.button);
+      if (p.down) mouseButtons.add(p.button);
+      else {
+        mouseButtons.delete(p.button);
+        if (p.button === 0 && (petting || headDown)) stopPetting(true);
+      }
       forwardInput();
     });
     api.onGaze(function (p) { if (p && typeof p.nx === 'number') pet.setGaze(p.nx, p.ny); });
     api.onCursor(function (p) {
+      if (p && p.leftDown === false && (petting || headDown)) {
+        stopPetting(true);
+      }
       if (!p || p.inside === false || typeof p.x !== 'number') {
         if (interactive && !headDown && !isDraggingPet) { interactive = false; api.setInteractive(false); }
         return;

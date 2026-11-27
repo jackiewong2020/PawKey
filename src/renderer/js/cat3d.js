@@ -1139,6 +1139,7 @@ return {
   fastForwardToSleep() { S.sleepAt = performance.now(); S.lastKey = S.lastMouse = -1e9; },
   setHunting(ms) { const t = performance.now(); wake(t); S.huntingUntil = t + (ms || 2600); },
   perk() { const t = performance.now(); wake(t); S.bounceAt = t; S.act = 'ear'; S.actUntil = t + 480; },
+  endPet,
   cancelPet() { S.pet = false; S.happyUntil = 0; },
   setMood(mode, ms, keepIdleClock) {
     const t = performance.now();

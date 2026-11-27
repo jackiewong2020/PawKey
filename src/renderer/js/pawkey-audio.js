@@ -19,10 +19,10 @@
       this.lastKeyPerf = -100;
       this.lastMeow = -1000;
       this.purr = null;
+      this._fadingPurrs = new Set();
       this._purrWanted = false;
       this._resuming = null;
       this._suspendTimer = 0;
-      this._purrStopTimer = 0;
       this._destroyed = false;
       this._unlockHandler = null;
       this._gestureHooked = false;
@@ -367,11 +367,39 @@
       });
     }
 
+    _killPurrNode(p) {
+      if (!p) return;
+      if (p.timer) { clearTimeout(p.timer); p.timer = 0; }
+      this._fadingPurrs.delete(p);
+      try { p.src.stop(); } catch (_) {}
+      try { p.lfo.stop(); } catch (_) {}
+      try { p.src.disconnect(); } catch (_) {}
+      try { p.lp.disconnect(); } catch (_) {}
+      try { p.gain.disconnect(); } catch (_) {}
+      try { p.lfo.disconnect(); } catch (_) {}
+      try { p.lfoG.disconnect(); } catch (_) {}
+    }
+
+    _killAllPurrs() {
+      if (this.purr) {
+        const cur = this.purr;
+        this.purr = null;
+        this._killPurrNode(cur);
+      }
+      if (this._fadingPurrs.size) {
+        Array.from(this._fadingPurrs).forEach((p) => this._killPurrNode(p));
+        this._fadingPurrs.clear();
+      }
+    }
+
     purrStart() {
       if (this._destroyed || !this.enabled || this.purr) return;
       this._purrWanted = true;
       this._whenReady((ctx) => {
         if (this._destroyed || !this._purrWanted || !this.enabled || this.purr || !this.noise) return;
+        if (this._fadingPurrs.size) {
+          Array.from(this._fadingPurrs).forEach((p) => this._killPurrNode(p));
+        }
         const src = ctx.createBufferSource();
         src.buffer = this.noise;
         src.loop = true;
@@ -386,25 +414,31 @@
         const lfoG = ctx.createGain(); lfoG.gain.value = 0.035;
         lfo.connect(lfoG); lfoG.connect(gain.gain);
         src.start(); lfo.start();
-        this.purr = { src, gain, lfo };
+        this.purr = { src, lp, gain, lfo, lfoG, timer: 0 };
       });
     }
 
     purrStop() {
       this._purrWanted = false;
-      if (this._purrStopTimer) { clearTimeout(this._purrStopTimer); this._purrStopTimer = 0; }
-      if (!this.purr || !this.ctx) return;
+      if (!this.purr) return;
       const p = this.purr;
       this.purr = null;
+      if (!this.ctx || this.ctx.state !== 'running') {
+        this._killPurrNode(p);
+        return;
+      }
+      this._fadingPurrs.add(p);
       const now = this.ctx.currentTime;
-      p.gain.gain.cancelScheduledValues(now);
-      p.gain.gain.setTargetAtTime(0.0001, now, 0.12);
-      this._purrStopTimer = setTimeout(() => {
-        this._purrStopTimer = 0;
-        try { p.src.stop(); } catch (_) {}
-        try { p.lfo.stop(); } catch (_) {}
+      try {
+        p.lfoG.gain.cancelScheduledValues(now);
+        p.lfoG.gain.setTargetAtTime(0, now, 0.045);
+        p.gain.gain.cancelScheduledValues(now);
+        p.gain.gain.setTargetAtTime(0.0001, now, 0.075);
+      } catch (_) {}
+      p.timer = setTimeout(() => {
+        this._killPurrNode(p);
         if (!this._destroyed) this._touchActivity();
-      }, 420);
+      }, 320);
     }
 
     suspend() {
@@ -412,13 +446,7 @@
       this._purrWanted = false;
       if (this.idleTimer) { clearTimeout(this.idleTimer); this.idleTimer = 0; }
       if (this._suspendTimer) { clearTimeout(this._suspendTimer); this._suspendTimer = 0; }
-      if (this._purrStopTimer) { clearTimeout(this._purrStopTimer); this._purrStopTimer = 0; }
-      if (this.purr) {
-        const p = this.purr;
-        this.purr = null;
-        try { p.src.stop(); } catch (_) {}
-        try { p.lfo.stop(); } catch (_) {}
-      }
+      this._killAllPurrs();
       if (this.master && this.ctx) {
         const now = this.ctx.currentTime;
         this.master.gain.cancelScheduledValues(now);
@@ -440,13 +468,7 @@
       this._removeGestureUnlock();
       if (this.idleTimer) { clearTimeout(this.idleTimer); this.idleTimer = 0; }
       if (this._suspendTimer) { clearTimeout(this._suspendTimer); this._suspendTimer = 0; }
-      if (this._purrStopTimer) { clearTimeout(this._purrStopTimer); this._purrStopTimer = 0; }
-      if (this.purr) {
-        const p = this.purr;
-        this.purr = null;
-        try { p.src.stop(); } catch (_) {}
-        try { p.lfo.stop(); } catch (_) {}
-      }
+      this._killAllPurrs();
       if (typeof document !== 'undefined') {
         document.querySelectorAll('script[data-pk-sound]').forEach((el) => el.remove());
       }
