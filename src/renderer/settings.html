@@ -11,7 +11,7 @@
   <header class="titlebar">
     <div class="traffic-lights">
       <button class="tl-dot tl-close" id="closeBtn" type="button" aria-label="关闭"></button>
-      <button class="tl-dot tl-min" id="minBtn" type="button" aria-label="最小化"></button>
+      <span class="tl-dot tl-disabled" aria-hidden="true" title="常驻菜单栏模式，无程序坞图标"></span>
       <span class="tl-dot tl-disabled" aria-hidden="true"></span>
     </div>
     <div class="titlebar-center">
@@ -36,20 +36,20 @@
   </nav>
 
   <main class="scroll">
+    <section class="perm-banner" id="permBanner" hidden>
+      <div class="perm-head">
+        <div class="perm-title" id="permTitle">开启全局打字同步</div>
+        <span class="perm-tag">本地离线 · 仅读键位</span>
+      </div>
+      <p class="perm-desc" id="permDesc">前往「系统设置 → 隐私与安全性 → 输入监控」打开 <b>PawKey</b> 开关（若列表中已有 PawKey，请先<b>关闭再重新打开</b>或点 <b>-</b> 移除后重新添加），再点「立即重启」即可生效。</p>
+      <div class="perm-actions">
+        <button class="btn primary" id="bannerOpenPermBtn" type="button">打开输入监控</button>
+        <button class="btn" id="bannerRelaunchBtn" type="button">已开启，立即重启</button>
+      </div>
+    </section>
+
     <!-- ==================== TAB 1: 角色外观 ==================== -->
     <div class="tab-pane active" data-pane="skins">
-      <section class="perm-banner" id="permBanner" hidden>
-        <div class="perm-head">
-          <div class="perm-title">开启全局打字同步</div>
-          <span class="perm-tag">本地离线 · 仅读键位</span>
-        </div>
-        <p class="perm-desc">前往「系统设置 → 隐私与安全性 → 输入监控」打开 <b>PawKey</b> 开关（若列表中已有 PawKey，请先<b>关闭再重新打开</b>或点 <b>-</b> 移除后重新添加），再点「立即重启」即可生效。</p>
-        <div class="perm-actions">
-          <button class="btn primary" id="bannerOpenPermBtn" type="button">打开输入监控</button>
-          <button class="btn" id="bannerRelaunchBtn" type="button">已开启，立即重启</button>
-        </div>
-      </section>
-
       <section class="companion-card">
         <div class="companion-top">
           <button class="companion-avatar" id="heroStickerBtn" type="button" title="点按逗猫">
@@ -185,7 +185,11 @@
           <button class="focus-btn" type="button" data-focus-min="25">25 分钟</button>
           <button class="focus-btn" type="button" data-focus-min="45">45 分钟</button>
           <button class="focus-btn" type="button" data-focus-min="60">60 分钟</button>
-          <button class="focus-btn subtle" id="focusStopBtn" type="button">结束</button>
+          <button class="focus-btn subtle" id="focusStopBtn" type="button" disabled>结束</button>
+        </div>
+        <div class="focus-status" id="focusStatus" hidden>
+          <span class="focus-dot" aria-hidden="true"></span>
+          <span id="focusCountdown">专注中 · 25:00</span>
         </div>
         <div class="row">
           <div class="row-copy">
@@ -279,7 +283,7 @@
         </div>
         <div class="row row-range">
           <div class="row-top"><span class="row-title">透明度</span><span class="val" id="opacityValue">100%</span></div>
-          <input type="range" id="opacity" min="0.55" max="1" step="0.05">
+          <input type="range" id="opacity" min="0.3" max="1" step="0.05">
         </div>
         <div class="row">
           <div class="row-copy"><div class="row-title">窗口背景</div><div class="row-note">支持透明悬浮、浅灰卡片，或 OBS 绿幕抠像。</div></div>
@@ -322,7 +326,7 @@
           <div class="sc-item"><kbd>Esc</kbd><span>关闭当前窗口</span></div>
         </div>
         <div class="about-note">
-          <b>PawKey 1.0</b> · 100% 本地离线运行，不记录文字内容、不联网上传。<br>
+          <b id="appVersion">PawKey 1.1.0</b> · 100% 本地离线运行，不记录文字内容、不联网上传。<br>
           Copyright © 2026 PawKey Authors · 开源组件致谢：Three.js (MIT)、MechVibes 机械轴采样 (MIT)。
         </div>
       </section>

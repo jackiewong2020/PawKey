@@ -4,7 +4,8 @@ const stageEl = host, hintEl = document.createElement('div');
 // The look-development page had on-page controls; here they are detached stand-ins so the shared drawing code stays identical.
 const stubs = {}, $ = id => stubs[id] || (stubs[id] = document.createElement(id.startsWith('btn') ? 'button' : 'div'));
 const offs = [], on = (type, fn, opt) => { window.addEventListener(type, fn, opt); offs.push(() => window.removeEventListener(type, fn, opt)); };
-let dead = false, raf = 0, followKeys = false, lastStrikeAt = -1e9, halfRate = false;
+let dead = false, raf = 0, hidden = false, followKeys = false, lastStrikeAt = -1e9, halfRate = false;
+let lastZFont = '', zzzShown = false, steamShown = false, dozeShown = false;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), mix = (a, b, t) => a + (b - a) * t, rnd = (a, b) => a + Math.random() * (b - a);
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -14,9 +15,9 @@ const LOW_Q = /[?&]low=1/.test(location.search) || /[?&]low=1/.test(location.has
 try { renderer = new THREE.WebGLRenderer({ antialias: !LOW_Q, alpha: true, powerPreference: 'default' }); }
 catch (e) { return null; }
 const DPR = devicePixelRatio || 1;
-renderer.setPixelRatio(LOW_Q ? Math.min(1.5, DPR) : Math.min(2, Math.max(1.75, DPR)));
+renderer.setPixelRatio(LOW_Q ? Math.min(DPR, 1.5) : Math.min(DPR, 2));
 renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); }, false);
-renderer.domElement.addEventListener('webglcontextrestored', () => { S.lastRender = 0; try { frame(); } catch (_) {} }, false);
+renderer.domElement.addEventListener('webglcontextrestored', () => { if (!dead && !hidden && !document.hidden) { S.lastRender = 0; schedule(); } }, false);
 stageEl.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(29, 1, 0.1, 100);
@@ -748,17 +749,47 @@ function runDemo(t) {
 
 /* ---------- frame ---------- */
 const shoulderW = V(0, 0, 0), proj = V(0, 0, 0), tmpGoal = V(0, 0, 0);
+function onRaf() { raf = 0; frame(); }
+function schedule() {
+  if (dead || hidden || document.hidden) return;
+  if (raf) cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(onRaf);
+}
+function setHidden(v) {
+  const h = !!v;
+  if (h === hidden) return;
+  hidden = h;
+  if (hidden) {
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+  } else if (!dead && !document.hidden) {
+    const now = performance.now();
+    S.last = now; S.lastRender = 0; S.lastTick = now;
+    schedule();
+  }
+}
+const onVis = () => {
+  if (document.hidden) {
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+  } else if (!dead && !hidden) {
+    const now = performance.now();
+    S.last = now; S.lastRender = 0; S.lastTick = now;
+    schedule();
+  }
+};
+document.addEventListener('visibilitychange', onVis);
+offs.push(() => document.removeEventListener('visibilitychange', onVis));
 function frame() {
+  if (dead || hidden || document.hidden) { raf = 0; return; }
   const t = performance.now(), realDt = Math.min(1, (t - S.last) / 1000);
   S.lastTick = t;
   S.frames = (S.frames || 0) + 1;
-  if (window.__catDragFreeze) { raf = requestAnimationFrame(frame); return; }
+  if (window.__catDragFreeze) { schedule(); return; }
   // Idle at 60 fps; any input, grooming or drag runs at the display refresh for crisp motion.
   const moodActive = !!(S.mood && S.mood !== 'normal' && t < (S.moodUntil || 0));
   const busy = demo || S.pet || S.mouseDown || S.down.size > 0 || moodActive || t - S.lastKey < 1200 || t - S.lastMouse < 1200 || t - S.lastInput < 1200 || !!VIEW.get('pose');
   const sleepingNow = sleeping(t);
   const targetFps = S.lowPower ? (sleepingNow ? 8 : busy ? 30 : 15) : (sleepingNow ? 12 : busy ? 60 : 24);
-  if (t - (S.lastRender || 0) < 1000 / targetFps) { raf = requestAnimationFrame(frame); return; }
+  if (t - (S.lastRender || 0) < 1000 / targetFps) { schedule(); return; }
   S.lastRender = t; S.last = t;
   const dt = Math.min(0.05, realDt);
   const ease = k => 1 - Math.exp(-dt * k);
@@ -774,8 +805,9 @@ function frame() {
   S.thump *= Math.exp(-dt * 13);
 
   if (dead) return;
-  const w = stageEl.clientWidth, h = stageEl.clientHeight; if (!w || !h) { raf = requestAnimationFrame(frame); return; }
-  zzz.style.fontSize = (w * 0.046) + 'px';
+  const w = stageEl.clientWidth, h = stageEl.clientHeight; if (!w || !h) { schedule(); return; }
+  const zFont = (w * 0.046) + 'px';
+  if (zFont !== lastZFont) { lastZFont = zFont; zzz.style.fontSize = zFont; }
   if (renderer.domElement.width !== Math.round(w * renderer.getPixelRatio()) || renderer.domElement.height !== Math.round(h * renderer.getPixelRatio())) { renderer.setSize(w, h, false); camera.aspect = w / h; camera.fov = w / h <= 1.05 ? 36 : 31; camera.updateProjectionMatrix(); }
   if (VIEW.has('a')) S.spin = +VIEW.get('a');
   if (S.spinning) { S.spin += dt * 2.4; if (S.spin >= Math.PI * 2) { S.spin = 0; S.spinning = false; } }
@@ -948,7 +980,7 @@ function frame() {
     proj.set(c.k.x, 0.75, c.k.z).project(camera); c.el.style.left = ((proj.x + 1) / 2 * w) + 'px'; c.el.style.top = ((1 - proj.y) / 2 * h - out * 8) + 'px'; c.el.style.opacity = String(Math.min(1, (t - c.born) / 80) * (1 - out)); return true; });
   if (asleep) {
     zproj.setFromMatrixPosition(head.matrixWorld).project(camera);
-    zzz.style.display = 'block';
+    if (!zzzShown) { zzzShown = true; zzz.style.display = 'block'; }
     zzz.style.left = ((zproj.x + 1) / 2 * w + w * 0.10) + 'px';
     zzz.style.top = ((1 - zproj.y) / 2 * h - h * 0.14) + 'px';
     zSpans.forEach((el, i) => {
@@ -957,12 +989,13 @@ function frame() {
       el.style.opacity = String(Math.max(0, Math.min(1, fade)));
       el.style.transform = `translate(${(p * 12).toFixed(1)}px, ${(-p * 26).toFixed(1)}px) scale(${(0.78 + p * 0.30).toFixed(3)})`;
     });
-  } else {
+  } else if (zzzShown) {
+    zzzShown = false;
     zzz.style.display = 'none';
   }
   if (coffeeMood && coffeeMug.visible) {
     zproj.set(coffeeMug.position.x, coffeeMug.position.y + 0.28, coffeeMug.position.z).project(camera);
-    coffeeSteam.style.display = 'block';
+    if (!steamShown) { steamShown = true; coffeeSteam.style.display = 'block'; }
     coffeeSteam.style.left = ((zproj.x + 1) / 2 * w) + 'px';
     coffeeSteam.style.top = ((1 - zproj.y) / 2 * h) + 'px';
     steamSpans.forEach((el, i) => {
@@ -972,12 +1005,13 @@ function frame() {
       el.style.opacity = String((Math.max(0, Math.min(1, fade)) * 0.88).toFixed(3));
       el.style.transform = `translate(${sway.toFixed(1)}px, ${(-p * 30).toFixed(1)}px) rotate(90deg) scale(${(0.76 + p * 0.34).toFixed(3)})`;
     });
-  } else {
+  } else if (steamShown) {
+    steamShown = false;
     coffeeSteam.style.display = 'none';
   }
   if (dozeMood && dozeDroop > 0.26 && dozeJolt < 0.08) {
     zproj.setFromMatrixPosition(head.matrixWorld).project(camera);
-    dozeZ.style.display = 'block';
+    if (!dozeShown) { dozeShown = true; dozeZ.style.display = 'block'; }
     dozeZ.style.left = ((zproj.x + 1) / 2 * w + w * 0.18 * dozeSide) + 'px';
     dozeZ.style.top = ((1 - zproj.y) / 2 * h - h * 0.07) + 'px';
     dozeSpans.forEach((el, i) => {
@@ -986,20 +1020,21 @@ function frame() {
       el.style.opacity = String(Math.max(0, Math.min(1, fade)).toFixed(3));
       el.style.transform = `translate(${(p * 10 * dozeSide).toFixed(1)}px, ${(-p * 24).toFixed(1)}px) scale(${(0.74 + p * 0.30).toFixed(3)})`;
     });
-  } else {
+  } else if (dozeShown) {
+    dozeShown = false;
     dozeZ.style.display = 'none';
   }
-  raf = requestAnimationFrame(frame);
+  schedule();
 }
 // A coat is named by its id; an unknown id falls back to the first coat.
 const coatIndex = id => Math.max(0, COATS.findIndex(c => c.id === id));
 let currentCoatIdx = coatIndex(options.coat);
 setCoat(currentCoatIdx); applyShape();
-raf = requestAnimationFrame(frame);
+schedule();
 // WebView2 can suspend rAF when the pet is fully covered by another window.
 // A lightweight watchdog keeps the animation state advancing in that case.
 const watchdog = setInterval(() => {
-  if (!dead && performance.now() - (S.lastTick || 0) > 260) {
+  if (!dead && !hidden && !document.hidden && performance.now() - (S.lastTick || 0) > 260) {
     try { frame(); } catch (e) { window.__catErr = String(e); }
   }
 }, 250);
@@ -1051,7 +1086,7 @@ return {
     const _vec = new THREE.Vector2();
     const _ray = new THREE.Raycaster();
     let _rect = null, _rectAt = 0;
-    window.addEventListener('resize', () => { _rect = null; }, { passive: true });
+    on('resize', () => { _rect = null; }, { passive: true });
     return function (clientX, clientY) {
       const now = performance.now();
       if (!_rect || now - _rectAt > 800) {
@@ -1082,7 +1117,13 @@ return {
     if ('coat' in o) { currentCoatIdx = coatIndex(o.coat); setCoat(currentCoatIdx); }
     else if ('eyeColor' in o) { const c = COATS[currentCoatIdx] || COATS[0]; M.eye.color.set(S.customEyeColor || c.eye); }
     if ('collar' in o) collarGroup.visible = o.collar !== false;
-    if ('lowPower' in o) { S.lowPower = !!o.lowPower; renderer.setPixelRatio(S.lowPower ? Math.min(1.25, DPR) : Math.min(2, Math.max(1.75, DPR))); }
+    if ('lowPower' in o) {
+      const lp = !!o.lowPower;
+      if (lp !== S.lowPower) {
+        S.lowPower = lp;
+        renderer.setPixelRatio(S.lowPower ? Math.min(DPR, 1.25) : (LOW_Q ? Math.min(DPR, 1.5) : Math.min(DPR, 2)));
+      }
+    }
     if (S.customEyeColor) M.eye.color.set(S.customEyeColor);
     if ('sleepMinutes' in o && !VIEW.get('sleep')) SLEEP_AFTER = clamp(+o.sleepMinutes || 5, 1, 120) * 60000;
   },
@@ -1107,7 +1148,8 @@ return {
     if (mode === 'meltdown') { wake(t); S.bounceAt = t; }
     else if ((mode === 'coffee' || mode === 'doze') && !keepIdleClock) { wake(t); S.act = null; }
   },
-  destroy() { dead = true; clearInterval(watchdog); clearInterval(letGo); cancelAnimationFrame(raf); offs.forEach(f => f()); S.chips.forEach(c => c.el.remove()); zzz.remove(); coffeeSteam.remove(); dozeZ.remove(); renderer.domElement.remove(); renderer.dispose(); },
+  setHidden,
+  destroy() { dead = true; clearInterval(watchdog); clearInterval(letGo); cancelAnimationFrame(raf); upTimers.forEach(clearTimeout); upTimers.clear(); offs.forEach(f => f()); S.chips.forEach(c => c.el.remove()); zzz.remove(); coffeeSteam.remove(); dozeZ.remove(); renderer.domElement.remove(); renderer.dispose(); },
 };
 };
 

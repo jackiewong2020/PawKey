@@ -4,6 +4,7 @@
 (function () {
   'use strict';
 
+  var svg = document.getElementById('tail2d');
   var path = document.getElementById('tail2dPath');
   var group = document.getElementById('tail2dGroup');
   if (!path || !group) return;
@@ -13,7 +14,7 @@
   var sleeping = false, sleepMix = 0;
   var N = 24, CAP = 10;
   var color = '#101010';
-  var t0 = 0;
+  var t0 = 0, rafId = 0, hidden = false;
 
   function lerp(a, b, t) { return a + (b - a) * t; }
   function smooth(t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }
@@ -64,7 +65,24 @@
     path.setAttribute('fill', color);
   }
 
+  function isVisible() {
+    if (hidden || document.hidden || !svg) return false;
+    return getComputedStyle(svg).display !== 'none';
+  }
+
+  function stop() {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+    t0 = 0;
+  }
+
+  function start() {
+    if (rafId || !isVisible()) return;
+    rafId = requestAnimationFrame(frame);
+  }
+
   function frame(now) {
+    rafId = 0;
+    if (!isVisible()) { stop(); return; }
     if (!t0) t0 = now;
     var t = (now - t0) / 1000;
     sleepMix += ((sleeping ? 1 : 0) - sleepMix) * 0.08;
@@ -87,12 +105,20 @@
     }
     group.setAttribute('transform', 'rotate(' + angle.toFixed(2) + ' 258 286)');
     path.setAttribute('d', build(t));
-    requestAnimationFrame(frame);
+    if (isVisible()) rafId = requestAnimationFrame(frame);
   }
 
-  window.tail2d = { setColor: setColor, setSleeping: function (v) { sleeping = !!v; } };
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) stop();
+    else start();
+  });
+  window.tail2d = {
+    setColor: setColor,
+    setSleeping: function (v) { sleeping = !!v; },
+    setHidden: function (v) { hidden = !!v; if (hidden) stop(); else start(); }
+  };
   setColor(color);
-  requestAnimationFrame(frame);
+  start();
 })();
 
 

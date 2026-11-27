@@ -72,6 +72,7 @@ window.addEventListener('unhandledrejection', function (ev) {
     onMouseButton: function () { return NOOP; },
     onGaze: function () { return NOOP; },
     onPlayAction: function () { return NOOP; },
+    onStats: function () { return NOOP; },
     onHookStatus: function () { return NOOP; },
     onDragEnd: function () { return NOOP; },
     dragStart: NOOP, dragEnd: NOOP, setInteractive: NOOP, openSettings: NOOP, ready: NOOP
@@ -177,6 +178,7 @@ window.addEventListener('unhandledrejection', function (ev) {
     audio.setVolume(config.volume);
     audio.setSwitchPack(config.switchSound || 's2');
     audio.setKeyUpEnabled(config.keyUpSound !== false);
+    audio.ensure();
   }
 
   // === Drag-by-Head (>=5px) & Petting Controller ===
@@ -223,7 +225,11 @@ window.addEventListener('unhandledrejection', function (ev) {
     st.totalKeys = (Number(st.totalKeys) || 0) + delta;
     st.focusDone = (Number(st.focusDone) || 0) + fDelta;
     config.stats = st;
-    api.setConfig({ stats: st });
+    if (typeof api.saveStats === 'function') {
+      api.saveStats({ flush: true, focusDelta: fDelta });
+    } else {
+      api.setConfig({ stats: st });
+    }
   }
   var tiredQuotes = ['好累喵… 爪子酸了 💦', '打工人小猫申请喘口气 💦', '汗流浃背了喵…', '摸摸猫头可以回血哦 ♥'];
   var meltdownQuotes = ['啊啊啊我不干了！彻底崩溃喵 🤯', '猫爪冒烟了… 已原地升天 👻', '罢工 7 秒！除非摸头哄哄我 💢', '老板我要小鱼干精神损失费！！'];
@@ -355,16 +361,20 @@ window.addEventListener('unhandledrejection', function (ev) {
     firedDaily: {}, snoozed: [], restTimer: 0, focusTimer: 0
   };
   function stopFocusTimer(silent) {
+    var wasActive = !!remState.focusTimer;
     if (remState.focusTimer) { clearInterval(remState.focusTimer); remState.focusTimer = 0; }
     var old = document.querySelector('.pk-focus-pill');
     if (old) old.remove();
-    if (!silent) spawnBubble('已结束番茄专注 🐾', window.innerWidth * 0.5, window.innerHeight * 0.14);
+    if (wasActive && api.reportFocusState) api.reportFocusState({ active: false, minutes: 0, endAt: 0 });
+    if (!silent && wasActive) spawnBubble('已结束番茄专注 🐾', window.innerWidth * 0.5, window.innerHeight * 0.14);
   }
   function startFocusTimer(minutes) {
     stopFocusTimer(true);
     if (remState.restTimer) { clearInterval(remState.restTimer); remState.restTimer = 0; var rp = document.querySelector('.pk-rest-pill'); if (rp) rp.remove(); }
     if (moodState === 'coffee' || moodState === 'doze') recoverFromMood('');
-    var endAt = Date.now() + (minutes || 25) * 60000;
+    var mins = minutes || 25;
+    var endAt = Date.now() + mins * 60000;
+    if (api.reportFocusState) api.reportFocusState({ active: true, minutes: mins, endAt: endAt });
     var pill = document.createElement('button');
     pill.type = 'button'; pill.className = 'pk-focus-pill'; pill.title = '点击提前结束番茄专注';
     document.body.appendChild(pill);
@@ -466,7 +476,13 @@ window.addEventListener('unhandledrejection', function (ev) {
         dismiss(); remState.lastWaterAt = Date.now();
         var today = localDateKey();
         var count = (config.waterDate === today ? (Number(config.waterCount) || 0) : 0) + 1;
-        api.setConfig({ waterDate: today, waterCount: count });
+        config.waterDate = today;
+        config.waterCount = count;
+        if (typeof api.saveStats === 'function') {
+          api.saveStats({ waterDate: today, waterCount: count });
+        } else {
+          api.setConfig({ waterDate: today, waterCount: count });
+        }
         spawnHeart(window.innerWidth * 0.5, window.innerHeight * 0.28);
         spawnBubble('今日第 ' + count + ' 杯水达成！💧', window.innerWidth * 0.5, window.innerHeight * 0.14);
       };
@@ -560,6 +576,36 @@ window.addEventListener('unhandledrejection', function (ev) {
       return;
     }
     window.__paw = { pet: pet, key: onKey, config: function () { return config; } };
+    function syncHiddenState(h) {
+      var hidden = !!h;
+      window.__pkPetHidden = hidden;
+      if (hidden) {
+        flushStats(0);
+        if (petting) { petting = false; audio.purrStop(); stopHearts(); }
+        pressed.clear();
+        pressedAt.clear();
+        forwardInput();
+      }
+      if (pet && pet.setHidden) pet.setHidden(hidden);
+      if (window.tail2d && window.tail2d.setHidden) window.tail2d.setHidden(hidden);
+    }
+    window.__pawkeySetPetHidden = syncHiddenState;
+    window.__pawkeySleep = function (sleeping) {
+      if (sleeping) {
+        flushStats(0);
+        if (petting) { petting = false; audio.purrStop(); stopHearts(); }
+        audio.suspend();
+        pressed.clear();
+        pressedAt.clear();
+        forwardInput();
+      } else {
+        audio.ensure();
+      }
+    };
+    window.addEventListener('pawkey:hidden', function (ev) {
+      syncHiddenState(ev && ev.detail && ev.detail.hidden);
+    });
+    if (window.__pkPetHidden) syncHiddenState(true);
     updateHintText();
     window.addEventListener('resize', updateHintText, { passive: true });
 
@@ -651,6 +697,15 @@ window.addEventListener('unhandledrejection', function (ev) {
     // Host bridge subscriptions
     api.getConfig().then(applyConfig).catch(function () { applyConfig(DEFAULTS); });
     api.onConfig(applyConfig);
+    if (typeof api.onStats === 'function') {
+      api.onStats(function (st) {
+        if (!st) return;
+        if (st.waterDate != null) {
+          config.waterDate = st.waterDate;
+          config.waterCount = Number(st.waterCount) || 0;
+        }
+      });
+    }
     api.onKey(onKey);
     api.onMouseButton(function (p) {
       if (!p) return;
@@ -785,7 +840,6 @@ window.addEventListener('unhandledrejection', function (ev) {
     setInterval(function () { flushStats(0); }, 10000);
     var _lastRemDate = localDateKey();
     setInterval(function () {
-      flushStats(0);
       var now = new Date(), nowMs = now.getTime(), todayStr = localDateKey(now);
       if (todayStr !== _lastRemDate) { _lastRemDate = todayStr; remState.firedDaily = {}; }
       if (config.dndMode || remState.focusTimer) return;

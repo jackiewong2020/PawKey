@@ -5,11 +5,12 @@
   --glass-border: rgba(0, 0, 0, 0.08);
   --glass-shadow: 0 4px 16px rgba(0, 0, 0, 0.10), 0 1px 3px rgba(0, 0, 0, 0.06);
   --ink: #1D1D1F;
-  --muted: #6E6E73;
+  --muted: #5A5A60;
   --subtle: rgba(0, 0, 0, 0.055);
   --subtle-hover: rgba(0, 0, 0, 0.11);
   --ok-text: #248A3D;
   --accent: #FF5A1F;
+  --accent-text: #C43906;
   --accent-hover: #E84E14;
   --card-bg: #F5F5F7;
 }
@@ -25,6 +26,7 @@
     --subtle-hover: rgba(255, 255, 255, 0.17);
     --ok-text: #30D158;
     --accent: #FF6B35;
+    --accent-text: #FF8A5C;
     --accent-hover: #FF7F50;
     --card-bg: #242428;
   }
@@ -38,6 +40,21 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
   -webkit-font-smoothing: antialiased;
   user-select: none;
+}
+
+body:not(.pk-bg-transparent):not(.pk-bg-greenscreen)::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  border-radius: 18px;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  pointer-events: none;
+  z-index: 30;
+}
+@media (prefers-color-scheme: dark) {
+  body:not(.pk-bg-transparent):not(.pk-bg-greenscreen)::after {
+    border-color: rgba(255, 255, 255, 0.14);
+  }
 }
 
 #stage { position: absolute; inset: 0; overflow: hidden; transform-origin: 50% 100%; }
@@ -216,7 +233,11 @@ html, body {
   backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 .pk-rest-pill { color: var(--ok-text); }
-.pk-focus-pill { color: var(--accent); }
+.pk-focus-pill { color: var(--accent-text); }
+.pk-rem-btn:focus-visible, .pk-rem-close:focus-visible, .pk-rest-pill:focus-visible, .pk-focus-pill:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 
 /* Sweat, Turbo Spark & Meltdown FX */
 .pk-sweat {

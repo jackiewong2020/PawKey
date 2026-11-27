@@ -1,13 +1,39 @@
 #!/usr/bin/env python3
 """Generate 100% original PawKey 2.1 macOS AppIcon (Sleek Agile Tuxedo Cat + Studio Keyboard) & Tray Icon."""
+import argparse
 import os
+import shutil
 import subprocess
 import tempfile
+from pathlib import Path
 from PIL import Image, ImageDraw
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASSETS = os.path.join(ROOT, "assets")
 os.makedirs(ASSETS, exist_ok=True)
+
+
+def find_chrome():
+    env_chrome = os.environ.get("PAWKEY_CHROME")
+    if env_chrome and os.path.isfile(env_chrome) and os.access(env_chrome, os.X_OK):
+        return env_chrome
+    for name in ("google-chrome", "chromium", "chromium-browser", "chrome"):
+        found = shutil.which(name)
+        if found:
+            return found
+    app_relatives = [
+        "Google Chrome.app/Contents/MacOS/Google Chrome",
+        "Chromium.app/Contents/MacOS/Chromium",
+        "Brave Browser.app/Contents/MacOS/Brave Browser",
+        "Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+    ]
+    roots = [Path("/Applications"), Path.home() / "Applications"]
+    for base in roots:
+        for rel in app_relatives:
+            cand = base / rel
+            if cand.is_file() and os.access(str(cand), os.X_OK):
+                return str(cand)
+    return None
 
 
 def render_app_icon_svg_via_chrome(out_png):
@@ -104,7 +130,9 @@ svg{display:block;width:1024px;height:1024px;}
   <ellipse cx="664" cy="726" rx="60" ry="44" fill="#FFFDF8" stroke="#161315" stroke-width="16"/>
 </svg>
 </body></html>"""
-    chrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    chrome = find_chrome()
+    if not chrome:
+        raise RuntimeError("Could not locate Chrome/Chromium executable. Set PAWKEY_CHROME or install Google Chrome.")
     with tempfile.TemporaryDirectory() as td:
         html_path = os.path.join(td, "icon.html")
         with open(html_path, "w", encoding="utf-8") as f:
@@ -143,9 +171,38 @@ def make_tray_icons():
     im.resize((18, 18), Image.LANCZOS).save(os.path.join(ASSETS, "tray-icon.png"))
 
 
-if __name__ == "__main__":
+def main():
+    parser = argparse.ArgumentParser(description="Generate PawKey AppIcon and/or tray icon assets.")
+    parser.add_argument("--app-icon", action="store_true", help="Generate app-icon-1024.png and AppIcon.icns")
+    parser.add_argument("--tray-icon", action="store_true", help="Generate tray-icon.png and tray-icon@2x.png")
+    parser.add_argument("--force", action="store_true", help="Overwrite existing icon files")
+    args = parser.parse_args()
+
+    want_app = args.app_icon or (not args.app_icon and not args.tray_icon)
+    want_tray = args.tray_icon or (not args.app_icon and not args.tray_icon)
+
     p1024 = os.path.join(ASSETS, "app-icon-1024.png")
-    render_app_icon_svg_via_chrome(p1024)
-    make_icns(p1024, os.path.join(ASSETS, "AppIcon.icns"))
-    make_tray_icons()
-    print("Generated PawKey 2.1 AppIcon.icns & tray icons cleanly!")
+    icns_path = os.path.join(ASSETS, "AppIcon.icns")
+    tray_1x = os.path.join(ASSETS, "tray-icon.png")
+    tray_2x = os.path.join(ASSETS, "tray-icon@2x.png")
+
+    if want_app:
+        if not args.force and os.path.exists(icns_path) and os.path.exists(p1024):
+            print("Skipping app icon generation (existing AppIcon.icns & app-icon-1024.png preserved; pass --force to overwrite).")
+        else:
+            if args.force or not os.path.exists(p1024):
+                render_app_icon_svg_via_chrome(p1024)
+            if args.force or not os.path.exists(icns_path):
+                make_icns(p1024, icns_path)
+            print("Generated PawKey AppIcon.icns cleanly!")
+
+    if want_tray:
+        if not args.force and os.path.exists(tray_1x) and os.path.exists(tray_2x):
+            print("Skipping tray icon generation (existing tray-icon*.png preserved; pass --force to overwrite).")
+        else:
+            make_tray_icons()
+            print("Generated PawKey tray icons cleanly!")
+
+
+if __name__ == "__main__":
+    main()
